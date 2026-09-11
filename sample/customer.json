@@ -1,0 +1,12 @@
+{
+  "name": "Harrow & Vane Ltd",
+  "email": "accounts@harrowvane.co.uk",
+  "country": "GB",
+  "vat_number": "GB 123 4567 89",
+  "currency": "GBP",
+  "tier": "vip",
+  "years_customer": 5,
+  "next_invoice_number": "INV-2026-0042",
+  "invoice_date": "2026-09-11",
+  "payment_terms_days": 30
+}

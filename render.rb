@@ -1,0 +1,130 @@
+#!/usr/bin/env ruby
+# render.rb — reads a JSON invoice on stdin, writes HTML on stdout.
+#
+# This file does ONE thing. It does not read files.
+# It does not call other languages. It does not parse a DSL.
+# It reads JSON. It writes HTML. It exits.
+
+require "json"
+
+CURRENCY_SYMBOLS = {
+  "GBP" => "£", "USD" => "$", "EUR" => "€",
+  "JPY" => "¥", "CHF" => "CHF ", "SEK" => "kr ",
+}
+
+def money(amount, currency)
+  sym = CURRENCY_SYMBOLS[currency] || "#{currency} "
+  whole, cents = format("%.2f", amount.to_f).split(".")
+  whole = whole.reverse.scan(/.{1,3}/).join(",").reverse
+  "#{sym}#{whole}.#{cents}"
+end
+
+def esc(s)
+  s.to_s.gsub("&", "&amp;").gsub("<", "&lt;").gsub(">", "&gt;")
+end
+
+def render(inv)
+  cur = inv["currency"]
+  lua = inv["lua"]
+
+  out = +""
+  out << <<~HEAD
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+    <meta charset="utf-8">
+    <title>INVOICE · #{esc(inv["invoice_number"])}</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+           color:#1a1a1a;background:#f5f5f5;padding:40px 20px}
+      .page{max-width:760px;margin:0 auto;background:#fff;padding:52px 56px;
+            border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+      h1{font-size:28px;font-weight:800;letter-spacing:.24em;color:#111;
+         margin-bottom:32px;border-bottom:2px solid #111;padding-bottom:14px}
+      h2{font-size:11px;font-weight:700;letter-spacing:.22em;color:#888;
+         margin:28px 0 12px;text-transform:uppercase}
+      .field{display:grid;grid-template-columns:180px 1fr;gap:12px;
+             padding:6px 0;font-size:13px;border-bottom:1px solid #f0f0f0}
+      .field .label{color:#888;letter-spacing:.04em}
+      table{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
+      th{text-align:left;padding:10px 8px;border-bottom:2px solid #e5e5e5;
+         font-size:10px;letter-spacing:.16em;color:#888;font-weight:700;
+         text-transform:uppercase}
+      td{padding:10px 8px;border-bottom:1px solid #f0f0f0}
+      td:nth-child(3),td:nth-child(4),td:nth-child(5){text-align:right;
+         font-variant-numeric:tabular-nums}
+      th:nth-child(3),th:nth-child(4),th:nth-child(5){text-align:right}
+      .line{display:flex;justify-content:space-between;padding:8px 0;
+            font-size:13px;font-variant-numeric:tabular-nums}
+      .line .label{color:#666}
+      .line.emphasis{border-top:2px solid #111;margin-top:8px;padding-top:14px;
+                     font-size:16px;font-weight:800;color:#111}
+      .paragraph{font-size:12px;color:#666;line-height:1.7;margin-top:8px}
+      .footer{margin-top:44px;padding-top:20px;border-top:1px solid #eee;
+              font-size:10px;color:#aaa;letter-spacing:.08em;text-align:center}
+    </style>
+    </head>
+    <body>
+    <div class="page">
+    <h1>INVOICE</h1>
+  HEAD
+
+  # ---- header ----
+  out << "<h2>Details</h2>\n"
+  [
+    ["Invoice",    inv["invoice_number"]],
+    ["Date",       inv["date"]],
+    ["Customer",   inv["customer"]["name"]],
+    ["Email",      inv["customer"]["email"]],
+    ["VAT Number", inv["customer"]["vat_number"]],
+    ["Currency",   cur],
+  ].each do |label, value|
+    out << %(<div class="field"><span class="label">#{esc(label)}</span><span>#{esc(value)}</span></div>\n)
+  end
+
+  # ---- line items ----
+  out << "<h2>Line Items</h2>\n"
+  out << "<table><thead><tr>"
+  ["SKU", "Description", "Qty", "Unit Price", "Total"].each { |h| out << "<th>#{esc(h)}</th>" }
+  out << "</tr></thead><tbody>\n"
+  inv["items"].each do |it|
+    out << "<tr>"
+    out << "<td>#{esc(it["sku"])}</td>"
+    out << "<td>#{esc(it["description"])}</td>"
+    out << "<td>#{esc(it["quantity"])}</td>"
+    out << "<td>#{esc(money(it["unit_price"], cur))}</td>"
+    out << "<td>#{esc(money(it["line_total"], cur))}</td>"
+    out << "</tr>\n"
+  end
+  out << "</tbody></table>\n"
+
+  # ---- totals ----
+  out << "<h2>Totals</h2>\n"
+  out << %(<div class="line"><span class="label">Subtotal</span><span>#{esc(money(inv["subtotal"], cur))}</span></div>\n)
+  if lua["discount_rate"].to_f > 0
+    out << %(<div class="line"><span class="label">Discount</span><span>#{esc(money(lua["discount_amount"], cur))}</span></div>\n)
+  end
+  if lua["vat_rate"].to_f > 0
+    out << %(<div class="line"><span class="label">VAT</span><span>#{esc(money(lua["vat_amount"], cur))}</span></div>\n)
+  end
+  out << %(<div class="line emphasis"><span class="label">TOTAL</span><span>#{esc(money(lua["total"], cur))}</span></div>\n)
+
+  # ---- footer ----
+  out << "<h2>Notes</h2>\n"
+  if lua["vat_rate"].to_f > 0
+    pct = (lua["vat_rate"].to_f * 100).round(1)
+    out << %(<div class="paragraph">VAT charged at #{pct}%.</div>\n)
+  else
+    out << %(<div class="paragraph">Reverse charge — no VAT applied.</div>\n)
+  end
+  out << %(<div class="paragraph">Payment due within #{esc(inv["due_days"])} days of invoice date.</div>\n)
+
+  out << %(<div class="footer">Generated by DOCGEN</div>\n)
+  out << "</div></body></html>\n"
+  out
+end
+
+# ---- entry point ----
+data = JSON.parse($stdin.read)
+print render(data)
