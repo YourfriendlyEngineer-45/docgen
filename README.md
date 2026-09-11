@@ -8,14 +8,25 @@ Free. Runs locally. No subscription. No account. Your data never leaves your mac
 ## Install
 
 Termux:
-    pkg install python lua54 ruby
+    pkg install -y python lua54 ruby python-tkinter
     pip install weasyprint
 
 Ubuntu/Debian:
-    apt install python3 lua5.4 ruby
+    sudo apt install -y python3 lua5.4 ruby python3-tk
     pip install weasyprint
 
-## Use
+Windows / macOS:
+    Install Python from python.org (includes tkinter).
+    Install Lua: https://www.lua.org/download.html
+    Install Ruby: https://www.ruby-lang.org/en/downloads/
+    pip install weasyprint
+
+## Use — Graphical
+
+Double-click `docgen-gui.py` (or run `python3 docgen-gui.py`).
+Pick a CSV, pick a JSON, click Generate. The invoice appears in `out/`.
+
+## Use — Command line
 
     ./run.sh path/to/invoices.csv path/to/customer.json out/
 
