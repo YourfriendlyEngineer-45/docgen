@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=DOCGEN
+Comment=Invoice Generator
+Exec=bash -c 'cd "$(dirname %k)" && python3 docgen-gui.py'
+Icon=utilities-terminal
+Terminal=false
+Categories=Office;Finance;

@@ -226,8 +226,8 @@ def main():
 
     # 4. Python writes
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_file = out_dir / f"{invoice['invoice_number']}.html"
-    out_file.write_text(html, encoding="utf-8")
+    html_path = out_dir / f"{invoice['invoice_number']}.html"
+    html_path.write_text(html, encoding="utf-8")
 
   # optional: also write a PDF next to the HTML
     try:

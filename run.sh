@@ -60,4 +60,4 @@ for f in "$ITEMS" "$CUSTOMER"; do
 done
 
 # ---- run ----
-src/python3 docgen.py "$ITEMS" "$CUSTOMER" "$OUT"
+python3 docgen.py "$ITEMS" "$CUSTOMER" "$OUT"

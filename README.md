@@ -23,8 +23,14 @@ Windows / macOS:
 
 ## Use — Graphical
 
-Double-click `docgen-gui.py` (or run `python3 docgen-gui.py`).
-Pick a CSV, pick a JSON, click Generate. The invoice appears in `out/`.
+Windows:   double-click DOCGEN.bat
+macOS:     double-click DOCGEN.command
+           (first time: right-click → Open → Open)
+Linux:     double-click DOCGEN.desktop
+           (first time: right-click → Allow Launching)
+
+A window opens. Pick a CSV, pick a JSON, click Generate.
+The invoice appears in the out/ folder.
 
 ## Use — Command line
 
